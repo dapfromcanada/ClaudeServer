@@ -1,0 +1,17 @@
+{
+  "_comment": "MCP Filesystem + Bash Server \u2014 Configuration",
+  "allowed_paths": [
+    "/home/YOUR_USERNAME",
+    "/mnt/your-external-drive",
+    "/mnt/ai_workspace",
+    "/"
+  ],
+  "allow_bash": true,
+  "bash_timeout_seconds": 30,
+  "blocked_commands": [
+    "rm -rf /",
+    "mkfs",
+    "dd if=",
+    ":(){:|:&};:"
+  ]
+}

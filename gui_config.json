@@ -1,0 +1,7 @@
+{
+  "api_key": "YOUR_ANTHROPIC_API_KEY_HERE",
+  "model": "claude-3-haiku-20240307",
+  "mode": "Agent",
+  "max_tokens": 8192,
+  "system_prompt": "You are Claude, a helpful AI assistant. You have access to filesystem and bash tools through MCP. Use them when helpful to answer user requests."
+}
