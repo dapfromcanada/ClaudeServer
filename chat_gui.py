@@ -85,6 +85,7 @@ MODES = {
 
 CONFIG_DIR = Path(__file__).parent
 CONFIG_FILE = CONFIG_DIR / "gui_config.json"
+APIKEY_FILE = CONFIG_DIR / "APIKey"
 SERVER_SCRIPT = CONFIG_DIR / "server.py"
 
 SERVER_CONFIG_FILE = CONFIG_DIR / "config.json"
@@ -108,15 +109,23 @@ DEFAULT_CONFIG = {
 }
 
 def load_gui_config() -> dict:
+    cfg = DEFAULT_CONFIG.copy()
     if CONFIG_FILE.exists():
         with open(CONFIG_FILE) as f:
-            cfg = json.load(f)
-            return {**DEFAULT_CONFIG, **cfg}
-    return DEFAULT_CONFIG.copy()
+            cfg.update(json.load(f))
+    # Load API key from separate ignored file
+    if APIKEY_FILE.exists():
+        cfg["api_key"] = APIKEY_FILE.read_text().strip()
+    return cfg
 
 def save_gui_config(cfg: dict):
+    # Write API key to its own ignored file
+    api_key = cfg.get("api_key", "")
+    APIKEY_FILE.write_text(api_key)
+    # Save everything else to gui_config.json (no api_key)
+    safe_cfg = {k: v for k, v in cfg.items() if k != "api_key"}
     with open(CONFIG_FILE, "w") as f:
-        json.dump(cfg, f, indent=2)
+        json.dump(safe_cfg, f, indent=2)
 
 # ── Dark Mode Stylesheet ──────────────────────────────────────────────────────
 
@@ -858,7 +867,7 @@ class ChatWindow(QMainWindow):
         input_layout.setSpacing(8)
         
         self.input_edit = QTextEdit()
-        self.input_edit.setPlaceholderText("Type a message... (Ctrl+Enter to send)")
+        self.input_edit.setPlaceholderText("Type a message... (Enter to send, Shift+Enter for new line)")
         self.input_edit.setMaximumHeight(100)
         self.input_edit.installEventFilter(self)
         input_layout.addWidget(self.input_edit, stretch=1)
@@ -1047,10 +1056,15 @@ class ChatWindow(QMainWindow):
         self.status_label.setStyleSheet("color: #6a9955; font-size: 12px;")
     
     def eventFilter(self, obj, event):
-        """Handle Ctrl+Enter to send."""
+        """Handle Enter to send, Shift+Enter for new line."""
         if obj == self.input_edit and event.type() == event.Type.KeyPress:
-            if event.key() == Qt.Key.Key_Return and event.modifiers() == Qt.KeyboardModifier.ControlModifier:
-                self.send_message()
+            if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
+                if event.modifiers() & Qt.KeyboardModifier.ShiftModifier:
+                    # Shift+Enter: insert a newline
+                    self.input_edit.insertPlainText("\n")
+                else:
+                    # Enter: send the message
+                    self.send_message()
                 return True
         return super().eventFilter(obj, event)
     
